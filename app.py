@@ -74,3 +74,12 @@ def slack_events():
                 "name": filename,
                 "parents": [GOOGLE_DRIVE_FOLDER_ID]
             },
+
+app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
+
+if __name__ == "__main__":
+    handler = SocketModeHandler(
+        app,
+        os.environ.get("SLACK_APP_TOKEN")
+    )
+    handler.start()
