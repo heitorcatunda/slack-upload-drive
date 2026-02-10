@@ -7,7 +7,12 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
+# =====================
+# App Flask
+# =====================
 app = Flask(__name__)
+
+PORT = int(os.environ.get("PORT", 3000))
 
 # =====================
 # Slack
@@ -31,7 +36,6 @@ credentials = Credentials.from_service_account_info(
 
 drive_service = build("drive", "v3", credentials=credentials)
 
-
 # =====================
 # Rotas
 # =====================
@@ -50,7 +54,7 @@ def slack_events():
 
     event = payload.get("event", {})
 
-    # Evento de arquivo enviado
+    # Quando um arquivo é enviado no Slack
     if event.get("type") == "file_shared":
         file_id = event.get("file_id")
 
@@ -63,23 +67,24 @@ def slack_events():
         }
 
         response = requests.get(download_url, headers=headers)
-        local_path = f"/tmp/{filename}"
 
+        local_path = f"/tmp/{filename}"
         with open(local_path, "wb") as f:
             f.write(response.content)
 
         media = MediaFileUpload(local_path, resumable=True)
         drive_service.files().create(
+            media_body=media,
             body={
                 "name": filename,
                 "parents": [GOOGLE_DRIVE_FOLDER_ID]
-            },
+            }
+        ).execute()
 
-app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
+    return jsonify({"ok": True})
 
+# =====================
+# Start
+# =====================
 if __name__ == "__main__":
-    handler = SocketModeHandler(
-        app,
-        os.environ.get("SLACK_APP_TOKEN")
-    )
-    handler.start()
+    app.run(host="0.0.0.0", port=PORT)
