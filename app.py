@@ -23,18 +23,22 @@ SLACK_SIGNING_SECRET = os.environ.get("SLACK_SIGNING_SECRET")
 slack_client = WebClient(token=SLACK_BOT_TOKEN)
 signature_verifier = SignatureVerifier(SLACK_SIGNING_SECRET)
 
-# =====================
-# Google Drive
-# =====================
-GOOGLE_CREDENTIALS_JSON = os.environ.get("GOOGLE_CREDENTIALS_JSON")
-GOOGLE_DRIVE_FOLDER_ID = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
+import json
 
-credentials = Credentials.from_service_account_info(
-    eval(GOOGLE_CREDENTIALS_JSON),
-    scopes=["https://www.googleapis.com/auth/drive"]
-)
+def get_drive_service():
+    credentials_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+    folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
 
-drive_service = build("drive", "v3", credentials=credentials)
+    if not credentials_json or not folder_id:
+        raise RuntimeError("Credenciais do Google Drive não configuradas")
+
+    credentials = Credentials.from_service_account_info(
+        json.loads(credentials_json),
+        scopes=["https://www.googleapis.com/auth/drive"]
+    )
+
+    return build("drive", "v3", credentials=credentials), folder_id
+
 
 # =====================
 # Rotas
@@ -72,14 +76,17 @@ def slack_events():
         with open(local_path, "wb") as f:
             f.write(response.content)
 
+       drive_service, folder_id = get_drive_service()
+
         media = MediaFileUpload(local_path, resumable=True)
         drive_service.files().create(
             media_body=media,
             body={
                 "name": filename,
-                "parents": [GOOGLE_DRIVE_FOLDER_ID]
+                "parents": [folder_id]
             }
         ).execute()
+
 
     return jsonify({"ok": True})
 
@@ -88,3 +95,4 @@ def slack_events():
 # =====================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
+
