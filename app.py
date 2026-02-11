@@ -1,24 +1,42 @@
-import os
-from flask import Flask, request, jsonify
+import threading
+import subprocess
+import uuid
 
-app = Flask(__name__)
+def processar_links(links, channel_id):
+    for url in links:
+        try:
+            filename = f"/tmp/{uuid.uuid4()}.mp4"
 
-PORT = int(os.environ.get("PORT", 3000))
+            subprocess.run(
+                ["yt-dlp", "-f", "bv*+ba/best", "-o", filename, url],
+                check=True
+            )
+
+            slack_client.chat_postMessage(
+                channel=channel_id,
+                text=f"✅ Download concluído:\n{url}"
+            )
+
+        except Exception as e:
+            slack_client.chat_postMessage(
+                channel=channel_id,
+                text=f"❌ Erro ao baixar {url}:\n{e}"
+            )
 
 @app.route("/slack/baixar", methods=["POST"])
 def baixar():
     texto = request.form.get("text", "").strip()
+    channel_id = request.form.get("channel_id")
 
     if not texto:
         return "Envie uma ou mais URLs do YouTube.", 200
 
     links = texto.split()
 
-    resposta = "Recebi os links:\n"
-    resposta += "\n".join(f"- {l}" for l in links)
+    thread = threading.Thread(
+        target=processar_links,
+        args=(links, channel_id)
+    )
+    thread.start()
 
-    return resposta, 200
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT)
-
+    return f"⏬ Iniciando download de {len(links)} vídeo(s)...", 200
