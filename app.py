@@ -23,11 +23,20 @@ slack_client = WebClient(token=SLACK_BOT_TOKEN)
 # =====================
 def processar_links(links, channel_id):
     for url in links:
-        try:
-            filename = f"/tmp/{uuid.uuid4()}.mp4"
+        filename = f"/tmp/{uuid.uuid4()}.mp4"
 
-            subprocess.run(
-                ["yt-dlp", "-f", "bv*+ba/best", "-o", filename, url],
+        try:
+            result = subprocess.run(
+                [
+                    "yt-dlp",
+                    "-f", "bv*+ba/best",
+                    "--merge-output-format", "mp4",
+                    "-o", filename,
+                    url
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
                 check=True
             )
 
@@ -36,11 +45,18 @@ def processar_links(links, channel_id):
                 text=f"✅ Download concluído:\n{url}"
             )
 
-        except Exception as e:
+        except subprocess.CalledProcessError as e:
             slack_client.chat_postMessage(
                 channel=channel_id,
-                text=f"❌ Erro ao baixar {url}:\n{e}"
+                text=(
+                    f"❌ Erro ao baixar:\n{url}\n"
+                    f"```{e.stderr}```"
+                )
             )
+
+        finally:
+            if os.path.exists(filename):
+                os.remove(filename)
 
 # =====================
 # Slash command
@@ -68,3 +84,4 @@ def baixar():
 # =====================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
+
