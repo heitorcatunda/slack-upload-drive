@@ -26,10 +26,17 @@ def processar_links(links, channel_id):
         filename = f"/tmp/{uuid.uuid4()}.mp4"
 
         try:
+            cookies = os.environ.get("YT_COOKIES")
+
+            cookies_path = "/tmp/cookies.txt"
+            with open(cookies_path, "w") as f:
+                f.write(cookies)
+                
             # Download do vídeo
             subprocess.run(
                 [
                     "yt-dlp",
+                    "--cookies", cookies_path,
                     "-f", "bv*+ba/best",
                     "-o", filename,
                     url
@@ -84,3 +91,4 @@ def baixar():
 # =====================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
+
