@@ -27,16 +27,9 @@ def processar_links(links, channel_id):
 
         try:
             result = subprocess.run(
-                [
-                    "yt-dlp",
-                    "-f", "bv*+ba/best",
-                    "--merge-output-format", "mp4",
-                    "-o", filename,
-                    url
-                ],
+                ["yt-dlp", "--version"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True,
                 check=True
             )
 
@@ -84,4 +77,5 @@ def baixar():
 # =====================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
+
 
