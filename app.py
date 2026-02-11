@@ -26,8 +26,14 @@ def processar_links(links, channel_id):
         filename = f"/tmp/{uuid.uuid4()}.mp4"
 
         try:
+            # Download do vídeo
             subprocess.run(
-                ["python", "-m", "yt_dlp", "-f", "bv*+ba/best", "-o", filename, url],
+                [
+                    "yt-dlp",
+                    "-f", "bv*+ba/best",
+                    "-o", filename,
+                    url
+                ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 check=True
@@ -43,7 +49,7 @@ def processar_links(links, channel_id):
                 channel=channel_id,
                 text=(
                     f"❌ Erro ao baixar:\n{url}\n"
-                    f"```{e.stderr}```"
+                    f"```{e.stderr.decode(errors='ignore')}```"
                 )
             )
 
@@ -71,7 +77,6 @@ def baixar():
     )
     thread.start()
 
-
     return f"⏬ Iniciando download de {len(links)} vídeo(s)...", 200
 
 # =====================
@@ -79,8 +84,3 @@ def baixar():
 # =====================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
-
-
-
-
-
