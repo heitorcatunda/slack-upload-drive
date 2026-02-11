@@ -36,14 +36,19 @@ def processar_links(links, channel_id):
             # =====================
             # Cookies
             # =====================
-            cookies = os.environ.get("YT_COOKIES")
-            if not cookies:
+            import base64
+
+            cookies_b64 = os.environ.get("YT_COOKIES_B64")
+            
+            if not cookies_b64:
                 slack_client.chat_postMessage(
                     channel=channel_id,
-                    text="❌ Variável de ambiente YT_COOKIES não definida."
+                    text="❌ Variável YT_COOKIES_B64 não definida."
                 )
                 continue
-
+            
+            cookies = base64.b64decode(cookies_b64).decode("utf-8")
+            
             with open(cookies_path, "w") as f:
                 f.write(cookies)
 
@@ -128,3 +133,4 @@ def baixar():
 # =====================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
+
