@@ -27,21 +27,11 @@ def processar_links(links, channel_id):
 
         try:
             subprocess.run(
-                [
-                    "yt-dlp",
-                    "-f", "bv*+ba/best",
-                    "--merge-output-format", "mp4",
-                    "--max-filesize", "200M",
-                    "--no-playlist",
-                    "-o", filename,
-                    url
-                ],
-                timeout=120,
+                ["yt-dlp", "--version"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 check=True
             )
-
 
             slack_client.chat_postMessage(
                 channel=channel_id,
@@ -87,6 +77,7 @@ def baixar():
 # =====================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
+
 
 
 
