@@ -27,7 +27,7 @@ def processar_links(links, channel_id):
 
         try:
             subprocess.run(
-                ["yt-dlp", "--version"],
+                ["python", "-m", "yt_dlp", "-f", "bv*+ba/best", "-o", filename, url],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 check=True
@@ -66,9 +66,11 @@ def baixar():
 
     thread = threading.Thread(
         target=processar_links,
-        args=(links, channel_id)
+        args=(links, channel_id),
+        daemon=True
     )
     thread.start()
+
 
     return f"⏬ Iniciando download de {len(links)} vídeo(s)...", 200
 
@@ -77,6 +79,7 @@ def baixar():
 # =====================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
+
 
 
 
