@@ -24,16 +24,33 @@ slack_client = WebClient(token=SLACK_BOT_TOKEN)
 def processar_links(links, channel_id):
     for url in links:
         filename = f"/tmp/{uuid.uuid4()}.mp4"
+        cookies_path = "/tmp/cookies.txt"
+
+        # Log inicial
+        slack_client.chat_postMessage(
+            channel=channel_id,
+            text=f"🚀 Iniciando download:\n{url}"
+        )
 
         try:
+            # =====================
+            # Cookies
+            # =====================
             cookies = os.environ.get("YT_COOKIES")
+            if not cookies:
+                slack_client.chat_postMessage(
+                    channel=channel_id,
+                    text="❌ Variável de ambiente YT_COOKIES não definida."
+                )
+                continue
 
-            cookies_path = "/tmp/cookies.txt"
             with open(cookies_path, "w") as f:
                 f.write(cookies)
-                
-            # Download do vídeo
-            subprocess.run(
+
+            # =====================
+            # Download
+            # =====================
+            result = subprocess.run(
                 [
                     "yt-dlp",
                     "--cookies", cookies_path,
@@ -43,21 +60,41 @@ def processar_links(links, channel_id):
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                check=True
+                timeout=120,  # ⏱ evita travar pra sempre
+                text=True
             )
 
-            slack_client.chat_postMessage(
-                channel=channel_id,
-                text=f"✅ Download concluído:\n{url}"
-            )
+            if result.returncode != 0:
+                slack_client.chat_postMessage(
+                    channel=channel_id,
+                    text=(
+                        f"❌ Erro no yt-dlp:\n{url}\n"
+                        f"```{result.stderr}```"
+                    )
+                )
+                continue
 
-        except subprocess.CalledProcessError as e:
+            # =====================
+            # Sucesso
+            # =====================
             slack_client.chat_postMessage(
                 channel=channel_id,
                 text=(
-                    f"❌ Erro ao baixar:\n{url}\n"
-                    f"```{e.stderr.decode(errors='ignore')}```"
+                    f"✅ Download concluído:\n{url}\n"
+                    f"```{result.stdout}```"
                 )
+            )
+
+        except subprocess.TimeoutExpired:
+            slack_client.chat_postMessage(
+                channel=channel_id,
+                text=f"⏱ Timeout ao baixar:\n{url}"
+            )
+
+        except Exception as e:
+            slack_client.chat_postMessage(
+                channel=channel_id,
+                text=f"🔥 Erro inesperado:\n{str(e)}"
             )
 
         finally:
@@ -91,4 +128,3 @@ def baixar():
 # =====================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
-
