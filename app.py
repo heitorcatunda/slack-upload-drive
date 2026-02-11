@@ -1,7 +1,26 @@
+import os
 import threading
 import subprocess
 import uuid
 
+from flask import Flask, request
+from slack_sdk import WebClient
+
+# =====================
+# App Flask
+# =====================
+app = Flask(__name__)
+PORT = int(os.environ.get("PORT", 3000))
+
+# =====================
+# Slack
+# =====================
+SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
+slack_client = WebClient(token=SLACK_BOT_TOKEN)
+
+# =====================
+# Background job
+# =====================
 def processar_links(links, channel_id):
     for url in links:
         try:
@@ -23,6 +42,9 @@ def processar_links(links, channel_id):
                 text=f"❌ Erro ao baixar {url}:\n{e}"
             )
 
+# =====================
+# Slash command
+# =====================
 @app.route("/slack/baixar", methods=["POST"])
 def baixar():
     texto = request.form.get("text", "").strip()
@@ -40,3 +62,9 @@ def baixar():
     thread.start()
 
     return f"⏬ Iniciando download de {len(links)} vídeo(s)...", 200
+
+# =====================
+# Start
+# =====================
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=PORT)
